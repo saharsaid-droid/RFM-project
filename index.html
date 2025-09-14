@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFM Analysis Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #858796;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fa;
+            --dark: #5a5c69;
+        }
+        
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            background-color: #f8f9fc;
+            color: #333;
+            padding-top: 20px;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--info) 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+            margin-bottom: 24px;
+            border: none;
+        }
+        
+        .card-header {
+            background-color: white;
+            border-bottom: 1px solid #e3e6f0;
+            padding: 15px 20px;
+            font-weight: 700;
+            color: var(--primary);
+            border-radius: 10px 10px 0 0 !important;
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .metric-card {
+            text-align: center;
+            padding: 20px 15px;
+            border-left: 4px solid;
+            transition: transform 0.3s;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-card.recency { border-color: var(--primary); }
+        .metric-card.frequency { border-color: var(--info); }
+        .metric-card.monetary { border-color: var(--warning); }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: var(--secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 8px;
+        }
+        
+        .btn-primary:hover {
+            background-color: #3a5fc8;
+            border-color: #3a5fc8;
+        }
+        
+        .nav-tabs .nav-link {
+            color: var(--secondary);
+            font-weight: 600;
+            border: none;
+            padding: 12px 20px;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background: transparent;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid #d1d3e2;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group-text {
+            background-color: #eaecf4;
+            border: 1px solid #d1d3e2;
+            border-radius: 8px;
+        }
+        
+        .data-form {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .segment-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        
+        .high-value {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .mid-value {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .low-value {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        canvas {
+            max-height: 400px;
+        }
+        
+        .customer-table {
+            font-size: 14px;
+        }
+        
+        .customer-table th {
+            background-color: #eaecf4;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .instructions {
+            background-color: #f8f9fc;
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .nav-page {
+            background-color: white;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+        }
+        
+        .nav-page .nav-link {
+            color: var(--secondary);
+            font-weight: 600;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        
+        .nav-page .nav-link.active {
+            background-color: var(--primary);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header text-center">
+            <h1 class="mb-3">RFM Analysis Dashboard</h1>
+            <p class="lead">Analyze customer behavior using Recency, Frequency, and Monetary metrics</p>
+        </div>
+
+        <ul class="nav nav-pills nav-page justify-content-center mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" id="personal-tab" href="#" onclick="showPage('personal')">Personal Analysis</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="dataset-tab" href="#" onclick="showPage('dataset')">Dataset Analysis</a>
+            </li>
+        </ul>
+
+        <!-- Personal Analysis Page -->
+        <div id="personal-page" class="page active">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header">
+                            Personal RFM Analysis
+                        </div>
+                        <div class="card-body">
+                            <div class="instructions">
+                                <h6>How to use:</h6>
+                                <p>Enter your customer data manually to perform RFM analysis. You'll need to provide order dates, customer identifiers, and order values.</p>
+                            </div>
+                            
+                            <div class="data-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Order Date</label>
+                                    <input type="date" class="form-control" id="orderDate">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Customer ID/Name</label>
+                                    <input type="text" class="form-control" id="customerId" placeholder="Enter customer identifier">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Order Value ($)</label>
+                                    <input type="number" class="form-control" id="orderValue" placeholder="Enter order value" min="0" step="0.01">
+                                </div>
+                                
+                                <button id="addOrder" class="btn btn-primary">Add Order</button>
+                                
+                                <div class="mt-4">
+                                    <h6>Added Orders</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Customer</th>
+                                                    <th>Value</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="ordersTable">
+                                                <!-- Orders will be added here -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button id="analyzePersonalBtn" class="btn btn-primary">Analyze Data</button>
+                                <button id="resetPersonalBtn" class="btn btn-secondary">Reset Data</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            Data Summary
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="totalCustomers">0</div>
+                                        <div class="metric-label">Total Customers</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="totalOrders">0</div>
+                                        <div class="metric-label">Total Orders</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-3">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="totalRevenue">$0</div>
+                                        <div class="metric-label">Total Revenue</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-3">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="avgOrderValue">$0</div>
+                                        <div class="metric-label">Avg Order Value</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="loading-spinner" id="personalLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing data... This may take a moment</p>
+                    </div>
+                    
+                    <div id="personalResultsSection" style="display: none;">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card metric-card recency">
+                                    <div class="metric-value" id="avgRecency">0</div>
+                                    <div class="metric-label">Avg Recency (days)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card frequency">
+                                    <div class="metric-value" id="avgFrequency">0</div>
+                                    <div class="metric-label">Avg Frequency</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card monetary">
+                                    <div class="metric-value" id="avgMonetary">$0</div>
+                                    <div class="metric-label">Avg Monetary Value</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <ul class="nav nav-tabs" id="personalResultsTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="segments-tab" data-bs-toggle="tab" data-bs-target="#segments" type="button" role="tab">Customer Segments</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison" type="button" role="tab">Segment Comparison</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="customers-tab" data-bs-toggle="tab" data-bs-target="#customers" type="button" role="tab">Customer Data</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="personalResultsTabContent">
+                            <div class="tab-pane fade show active" id="segments" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Customer Segments
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <canvas id="segmentChart"></canvas>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="highValueCount">0</div>
+                                                            <div class="metric-label">High-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="midValueCount">0</div>
+                                                            <div class="metric-label">Mid-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 mt-3">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="lowValueCount">0</div>
+                                                            <div class="metric-label">Low-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 mt-3">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="customersAnalyzed">0</div>
+                                                            <div class="metric-label">Total Analyzed</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="comparison" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Segment Comparison
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <canvas id="comparisonChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="customers" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Customer RFM Data
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="segmentFilter" class="form-label">Filter by Segment:</label>
+                                            <select class="form-select" id="segmentFilter">
+                                                <option value="all">All Segments</option>
+                                                <option value="High-Value">High-Value</option>
+                                                <option value="Mid-Value">Mid-Value</option>
+                                                <option value="Low-Value">Low-Value</option>
+                                            </select>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover customer-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Customer</th>
+                                                        <th>Recency (days)</th>
+                                                        <th>Frequency</th>
+                                                        <th>Monetary</th>
+                                                        <th>RFM Score</th>
+                                                        <th>Segment</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="customerTable">
+                                                    <!-- Customer data will be populated here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 mt-4">
+                            <div class="card-header">
+                                Data Export
+                            </div>
+                            <div class="card-body">
+                                <button id="exportPersonalBtn" class="btn btn-success">Download RFM Results as CSV</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dataset Analysis Page -->
+        <div id="dataset-page" class="page">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="card">
+                        <div class="card-header">
+                            Dataset RFM Analysis
+                        </div>
+                        <div class="card-body">
+                            <div class="instructions">
+                                <h6>How to use:</h6>
+                                <p>Upload a CSV file with your sales data to perform RFM analysis on the entire dataset. The file should include columns for order date, customer identifier, and order value.</p>
+                            </div>
+                            
+                            <div class="data-form">
+                                <div class="mb-3">
+                                    <label for="csvFile" class="form-label">Upload Sales Data (CSV)</label>
+                                    <input class="form-control" type="file" id="csvFile" accept=".csv">
+                                </div>
+                                
+                                <div id="columnMapping" style="display: none;">
+                                    <h6 class="mt-3">Column Mapping</h6>
+                                    <div class="mb-2">
+                                        <label class="form-label">Date Column</label>
+                                        <select class="form-control" id="dateColumn"></select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Customer Column</label>
+                                        <select class="form-control" id="customerColumn"></select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label">Value Column</label>
+                                        <select class="form-control" id="valueColumn"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="action-buttons">
+                                <button id="analyzeDatasetBtn" class="btn btn-primary">Analyze Data</button>
+                                <button id="resetDatasetBtn" class="btn btn-secondary">Reset Data</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            Data Summary
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="datasetTotalCustomers">0</div>
+                                        <div class="metric-label">Total Customers</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="datasetTotalOrders">0</div>
+                                        <div class="metric-label">Total Orders</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-3">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="datasetTotalRevenue">$0</div>
+                                        <div class="metric-label">Total Revenue</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mt-3">
+                                    <div class="card metric-card">
+                                        <div class="metric-value" id="datasetAvgOrderValue">$0</div>
+                                        <div class="metric-label">Avg Order Value</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7">
+                    <div class="loading-spinner" id="datasetLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Processing data... This may take a moment</p>
+                    </div>
+                    
+                    <div id="datasetResultsSection" style="display: none;">
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card metric-card recency">
+                                    <div class="metric-value" id="datasetAvgRecency">0</div>
+                                    <div class="metric-label">Avg Recency (days)</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card frequency">
+                                    <div class="metric-value" id="datasetAvgFrequency">0</div>
+                                    <div class="metric-label">Avg Frequency</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card metric-card monetary">
+                                    <div class="metric-value" id="datasetAvgMonetary">$0</div>
+                                    <div class="metric-label">Avg Monetary Value</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <ul class="nav nav-tabs" id="datasetResultsTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="datasetSegments-tab" data-bs-toggle="tab" data-bs-target="#datasetSegments" type="button" role="tab">Customer Segments</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="datasetComparison-tab" data-bs-toggle="tab" data-bs-target="#datasetComparison" type="button" role="tab">Segment Comparison</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="datasetCustomers-tab" data-bs-toggle="tab" data-bs-target="#datasetCustomers" type="button" role="tab">Customer Data</button>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content" id="datasetResultsTabContent">
+                            <div class="tab-pane fade show active" id="datasetSegments" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Customer Segments
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <canvas id="datasetSegmentChart"></canvas>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="datasetHighValueCount">0</div>
+                                                            <div class="metric-label">High-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="datasetMidValueCount">0</div>
+                                                            <div class="metric-label">Mid-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 mt-3">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="datasetLowValueCount">0</div>
+                                                            <div class="metric-label">Low-Value Customers</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6 mt-3">
+                                                        <div class="card metric-card">
+                                                            <div class="metric-value" id="datasetCustomersAnalyzed">0</div>
+                                                            <div class="metric-label">Total Analyzed</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="datasetComparison" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Segment Comparison
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <canvas id="datasetComparisonChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-pane fade" id="datasetCustomers" role="tabpanel">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        Customer RFM Data
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label for="datasetSegmentFilter" class="form-label">Filter by Segment:</label>
+                                            <select class="form-select" id="datasetSegmentFilter">
+                                                <option value="all">All Segments</option>
+                                                <option value="High-Value">High-Value</option>
+                                                <option value="Mid-Value">Mid-Value</option>
+                                                <option value="Low-Value">Low-Value</option>
+                                            </select>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover customer-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Customer</th>
+                                                        <th>Recency (days)</th>
+                                                        <th>Frequency</th>
+                                                        <th>Monetary</th>
+                                                        <th>RFM Score</th>
+                                                        <th>Segment</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="datasetCustomerTable">
+                                                    <!-- Customer data will be populated here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4 mt-4">
+                            <div class="card-header">
+                                Data Export
+                            </div>
+                            <div class="card-body">
+                                <button id="exportDatasetBtn" class="btn btn-success">Download RFM Results as CSV</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.0/papaparse.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Data storage
+            let orders = [];
+            let datasetOrders = [];
+            let rfmResults = [];
+            let datasetRfmResults = [];
+            
+            // DOM elements
+            const addOrderBtn = document.getElementById('addOrder');
+            const analyzePersonalBtn = document.getElementById('analyzePersonalBtn');
+            const resetPersonalBtn = document.getElementById('resetPersonalBtn');
+            const exportPersonalBtn = document.getElementById('exportPersonalBtn');
+            const analyzeDatasetBtn = document.getElementById('analyzeDatasetBtn');
+            const resetDatasetBtn = document.getElementById('resetDatasetBtn');
+            const exportDatasetBtn = document.getElementById('exportDatasetBtn');
+            const csvFileInput = document.getElementById('csvFile');
+            const personalResultsSection = document.getElementById('personalResultsSection');
+            const datasetResultsSection = document.getElementById('datasetResultsSection');
+            const personalLoading = document.getElementById('personalLoading');
+            const datasetLoading = document.getElementById('datasetLoading');
+            const ordersTable = document.getElementById('ordersTable');
+            const customerTable = document.getElementById('customerTable');
+            const datasetCustomerTable = document.getElementById('datasetCustomerTable');
+            const segmentFilter = document.getElementById('segmentFilter');
+            const datasetSegmentFilter = document.getElementById('datasetSegmentFilter');
+            
+            // Metric elements
+            const totalCustomersEl = document.getElementById('totalCustomers');
+            const totalOrdersEl = document.getElementById('totalOrders');
+            const totalRevenueEl = document.getElementById('totalRevenue');
+            const avgOrderValueEl = document.getElementById('avgOrderValue');
+            const avgRecencyEl = document.getElementById('avgRecency');
+            const avgFrequencyEl = document.getElementById('avgFrequency');
+            const avgMonetaryEl = document.getElementById('avgMonetary');
+            const highValueCountEl = document.getElementById('highValueCount');
+            const midValueCountEl = document.getElementById('midValueCount');
+            const lowValueCountEl = document.getElementById('lowValueCount');
+            const customersAnalyzedEl = document.getElementById('customersAnalyzed');
+            
+            const datasetTotalCustomersEl = document.getElementById('datasetTotalCustomers');
+            const datasetTotalOrdersEl = document.getElementById('datasetTotalOrders');
+            const datasetTotalRevenueEl = document.getElementById('datasetTotalRevenue');
+            const datasetAvgOrderValueEl = document.getElementById('datasetAvgOrderValue');
+            const datasetAvgRecencyEl = document.getElementById('datasetAvgRecency');
+            const datasetAvgFrequencyEl = document.getElementById('datasetAvgFrequency');
+            const datasetAvgMonetaryEl = document.getElementById('datasetAvgMonetary');
+            const datasetHighValueCountEl = document.getElementById('datasetHighValueCount');
+            const datasetMidValueCountEl = document.getElementById('datasetMidValueCount');
+            const datasetLowValueCountEl = document.getElementById('datasetLowValueCount');
+            const datasetCustomersAnalyzedEl = document.getElementById('datasetCustomersAnalyzed');
+            
+            // Charts
+            let segmentChart = null;
+            let comparisonChart = null;
+            let datasetSegmentChart = null;
+            let datasetComparisonChart = null;
+            
+            // Event listeners
+            addOrderBtn.addEventListener('click', addOrder);
+            analyzePersonalBtn.addEventListener('click', analyzePersonalData);
+            resetPersonalBtn.addEventListener('click', resetPersonalData);
+            exportPersonalBtn.addEventListener('click', exportPersonalToCSV);
+            analyzeDatasetBtn.addEventListener('click', analyzeDatasetData);
+            resetDatasetBtn.addEventListener('click', resetDatasetData);
+            exportDatasetBtn.addEventListener('click', exportDatasetToCSV);
+            csvFileInput.addEventListener('change', handleFileUpload);
+            segmentFilter.addEventListener('change', filterCustomerTable);
+            datasetSegmentFilter.addEventListener('change', filterDatasetCustomerTable);
+            
+            // Initialize
+            updateSummary();
+            
+            function showPage(pageId) {
+                // Hide all pages
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Show the selected page
+                document.getElementById(`${pageId}-page`).classList.add('active');
+                
+                // Update the active tab
+                document.querySelectorAll('.nav-page .nav-link').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.getElementById(`${pageId}-tab`).classList.add('active');
+            }
+            
+            function addOrder() {
+                // Get input values
+                const date = document.getElementById('orderDate').value;
+                const customer = document.getElementById('customerId').value.trim();
+                const value = parseFloat(document.getElementById('orderValue').value) || 0;
+                
+                // Validate inputs
+                if (!date || !customer || value <= 0) {
+                    alert('Please fill in all fields with valid values');
+                    return;
+                }
+                
+                // Add order to array
+                orders.push({
+                    date,
+                    customer,
+                    value
+                });
+                
+                // Clear input fields
+                document.getElementById('orderDate').value = '';
+                document.getElementById('customerId').value = '';
+                document.getElementById('orderValue').value = '';
+                
+                // Update UI
+                updateOrdersTable();
+                updateSummary();
+            }
+            
+            function updateOrdersTable() {
+                ordersTable.innerHTML = '';
+                
+                orders.forEach((order, index) => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${order.date}</td>
+                        <td>${order.customer}</td>
+                        <td>$${order.value.toFixed(2)}</td>
+                        <td><button class="btn btn-sm btn-danger" onclick="removeOrder(${index})">Remove</button></td>
+                    `;
+                    
+                    ordersTable.appendChild(row);
+                });
+            }
+            
+            function removeOrder(index) {
+                orders.splice(index, 1);
+                updateOrdersTable();
+                updateSummary();
+            }
+            
+            function updateSummary() {
+                const uniqueCustomers = new Set(orders.map(order => order.customer));
+                const totalRevenue = orders.reduce((sum, order) => sum + order.value, 0);
+                const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
+                
+                totalCustomersEl.textContent = uniqueCustomers.size;
+                totalOrdersEl.textContent = orders.length;
+                totalRevenueEl.textContent = `$${totalRevenue.toFixed(2)}`;
+                avgOrderValueEl.textContent = `$${avgOrderValue.toFixed(2)}`;
+            }
+            
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                Papa.parse(file, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        if (results.data.length > 0) {
+                            // Show column mapping options
+                            document.getElementById('columnMapping').style.display = 'block';
+                            
+                            // Populate column selectors
+                            const columns = results.meta.fields;
+                            const dateColumn = document.getElementById('dateColumn');
+                            const customerColumn = document.getElementById('customerColumn');
+                            const valueColumn = document.getElementById('valueColumn');
+                            
+                            // Clear existing options
+                            dateColumn.innerHTML = '';
+                            customerColumn.innerHTML = '';
+                            valueColumn.innerHTML = '';
+                            
+                            // Add new options
+                            columns.forEach(column => {
+                                [dateColumn, customerColumn, valueColumn].forEach(select => {
+                                    const option = document.createElement('option');
+                                    option.value = column;
+                                    option.textContent = column;
+                                    select.appendChild(option);
+                                });
+                            });
+                            
+                            // Store the parsed data
+                            datasetOrders = results.data;
+                            
+                            // Update dataset summary
+                            updateDatasetSummary();
+                        }
+                    },
+                    error: function(error) {
+                        alert('Error parsing CSV: ' + error);
+                    }
+                });
+            }
+            
+            function updateDatasetSummary() {
+                if (datasetOrders.length === 0) return;
+                
+                const dateColumn = document.getElementById('dateColumn').value;
+                const customerColumn = document.getElementById('customerColumn').value;
+                const valueColumn = document.getElementById('valueColumn').value;
+                
+                // Extract relevant data
+                const validOrders = datasetOrders.filter(row => 
+                    row[dateColumn] && row[customerColumn] && !isNaN(parseFloat(row[valueColumn]))
+                );
+                
+                const uniqueCustomers = new Set(validOrders.map(order => order[customerColumn]));
+                const totalRevenue = validOrders.reduce((sum, order) => sum + parseFloat(order[valueColumn]), 0);
+                const avgOrderValue = validOrders.length > 0 ? totalRevenue / validOrders.length : 0;
+                
+                datasetTotalCustomersEl.textContent = uniqueCustomers.size;
+                datasetTotalOrdersEl.textContent = validOrders.length;
+                datasetTotalRevenueEl.textContent = `$${totalRevenue.toFixed(2)}`;
+                datasetAvgOrderValueEl.textContent = `$${avgOrderValue.toFixed(2)}`;
+            }
+            
+            function analyzePersonalData() {
+                if (orders.length === 0) {
+                    alert('Please add at least one order first');
+                    return;
+                }
+                
+                // Show loading indicator
+                personalLoading.style.display = 'block';
+                personalResultsSection.style.display = 'none';
+                
+                // Use setTimeout to allow the UI to update before starting intensive processing
+                setTimeout(() => {
+                    try {
+                        performRFMAnalysis(orders, false);
+                        displayPersonalResults();
+                        personalLoading.style.display = 'none';
+                        personalResultsSection.style.display = 'block';
+                    } catch (error) {
+                        personalLoading.style.display = 'none';
+                        alert('Error during analysis: ' + error.message);
+                    }
+                }, 500);
+            }
+            
+            function analyzeDatasetData() {
+                if (datasetOrders.length === 0) {
+                    alert('Please upload a CSV file first');
+                    return;
+                }
+                
+                // Show loading indicator
+                datasetLoading.style.display = 'block';
+                datasetResultsSection.style.display = 'none';
+                
+                // Use setTimeout to allow the UI to update before starting intensive processing
+                setTimeout(() => {
+                    try {
+                        performRFMAnalysis(datasetOrders, true);
+                        displayDatasetResults();
+                        datasetLoading.style.display = 'none';
+                        datasetResultsSection.style.display = 'block';
+                    } catch (error) {
+                        datasetLoading.style.display = 'none';
+                        alert('Error during analysis: ' + error.message);
+                    }
+                }, 500);
+            }
+            
+            function performRFMAnalysis(data, isDataset) {
+                // Convert date strings to Date objects and find the most recent date
+                const today = new Date();
+                let maxDate = new Date(0);
+                
+                let processedData = [];
+                
+                if (isDataset) {
+                    const dateColumn = document.getElementById('dateColumn').value;
+                    const customerColumn = document.getElementById('customerColumn').value;
+                    const valueColumn = document.getElementById('valueColumn').value;
+                    
+                    processedData = data.map(item => ({
+                        date: new Date(item[dateColumn]),
+                        customer: item[customerColumn],
+                        value: parseFloat(item[valueColumn]) || 0
+                    })).filter(item => item.date && item.customer && !isNaN(item.value));
+                } else {
+                    processedData = data.map(item => ({
+                        date: new Date(item.date),
+                        customer: item.customer,
+                        value: item.value
+                    }));
+                }
+                
+                processedData.forEach(item => {
+                    if (item.date > maxDate) maxDate = item.date;
+                });
+                
+                // Group by customer
+                const customerData = {};
+                
+                processedData.forEach(item => {
+                    if (!customerData[item.customer]) {
+                        customerData[item.customer] = {
+                            orders: [],
+                            totalValue: 0,
+                            lastOrder: new Date(0)
+                        };
+                    }
+                    
+                    customerData[item.customer].orders.push(item);
+                    customerData[item.customer].totalValue += item.value;
+                    
+                    if (item.date > customerData[item.customer].lastOrder) {
+                        customerData[item.customer].lastOrder = item.date;
+                    }
+                });
+                
+                // Calculate RFM values for each customer
+                const results = [];
+                
+                for (const customer in customerData) {
+                    const recency = Math.floor((today - customerData[customer].lastOrder) / (1000 * 60 * 60 * 24));
+                    const frequency = customerData[customer].orders.length;
+                    const monetary = customerData[customer].totalValue;
+                    
+                    results.push({
+                        customer,
+                        recency,
+                        frequency,
+                        monetary
+                    });
+                }
+                
+                // Calculate quartiles for R, F, M
+                const recencyValues = results.map(r => r.recency).sort((a, b) => a - b);
+                const frequencyValues = results.map(r => r.frequency).sort((a, b) => a - b);
+                const monetaryValues = results.map(r => r.monetary).sort((a, b) => a - b);
+                
+                // Helper function to calculate quartiles
+                const calculateQuartiles = (values) => {
+                    const q1 = values[Math.floor(values.length * 0.25)];
+                    const q2 = values[Math.floor(values.length * 0.5)];
+                    const q3 = values[Math.floor(values.length * 0.75)];
+                    return { q1, q2, q3 };
+                };
+                
+                const recencyQuartiles = calculateQuartiles(recencyValues);
+                const frequencyQuartiles = calculateQuartiles(frequencyValues);
+                const monetaryQuartiles = calculateQuartiles(monetaryValues);
+                
+                // Assign RFM scores (1-4, with 4 being best)
+                results.forEach(result => {
+                    // Recency: lower is better (4 for most recent)
+                    if (result.recency <= recencyQuartiles.q1) result.rScore = 4;
+                    else if (result.recency <= recencyQuartiles.q2) result.rScore = 3;
+                    else if (result.recency <= recencyQuartiles.q3) result.rScore = 2;
+                    else result.rScore = 1;
+                    
+                    // Frequency: higher is better (4 for most frequent)
+                    if (result.frequency >= frequencyQuartiles.q3) result.fScore = 4;
+                    else if (result.frequency >= frequencyQuartiles.q2) result.fScore = 3;
+                    else if (result.frequency >= frequencyQuartiles.q1) result.fScore = 2;
+                    else result.fScore = 1;
+                    
+                    // Monetary: higher is better (4 for highest spending)
+                    if (result.monetary >= monetaryQuartiles.q3) result.mScore = 4;
+                    else if (result.monetary >= monetaryQuartiles.q2) result.mScore = 3;
+                    else if (result.monetary >= monetaryQuartiles.q1) result.mScore = 2;
+                    else result.mScore = 1;
+                    
+                    // Calculate overall RFM score (sum of individual scores)
+                    result.rfmScore = result.rScore + result.fScore + result.mScore;
+                });
+                
+                // Segment customers based on RFM score
+                const scoreValues = results.map(r => r.rfmScore).sort((a, b) => a - b);
+                const scoreQuartiles = calculateQuartiles(scoreValues);
+                
+                results.forEach(result => {
+                    if (result.rfmScore >= scoreQuartiles.q3) {
+                        result.segment = 'High-Value';
+                    } else if (result.rfmScore >= scoreQuartiles.q2) {
+                        result.segment = 'Mid-Value';
+                    } else {
+                        result.segment = 'Low-Value';
+                    }
+                });
+                
+                if (isDataset) {
+                    datasetRfmResults = results;
+                } else {
+                    rfmResults = results;
+                }
+            }
+            
+            function displayPersonalResults() {
+                // Calculate averages
+                const avgRecency = rfmResults.reduce((sum, r) => sum + r.recency, 0) / rfmResults.length;
+                const avgFrequency = rfmResults.reduce((sum, r) => sum + r.frequency, 0) / rfmResults.length;
+                const avgMonetary = rfmResults.reduce((sum, r) => sum + r.monetary, 0) / rfmResults.length;
+                
+                // Update metrics
+                avgRecencyEl.textContent = avgRecency.toFixed(1);
+                avgFrequencyEl.textContent = avgFrequency.toFixed(1);
+                avgMonetaryEl.textContent = `$${avgMonetary.toFixed(2)}`;
+                
+                // Segment counts
+                const highValueCount = rfmResults.filter(r => r.segment === 'High-Value').length;
+                const midValueCount = rfmResults.filter(r => r.segment === 'Mid-Value').length;
+                const lowValueCount = rfmResults.filter(r => r.segment === 'Low-Value').length;
+                
+                highValueCountEl.textContent = highValueCount;
+                midValueCountEl.textContent = midValueCount;
+                lowValueCountEl.textContent = lowValueCount;
+                customersAnalyzedEl.textContent = rfmResults.length;
+                
+                // Create segment distribution chart
+                if (segmentChart) segmentChart.destroy();
+                const segmentCtx = document.getElementById('segmentChart').getContext('2d');
+                segmentChart = new Chart(segmentCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['High-Value', 'Mid-Value', 'Low-Value'],
+                        datasets: [{
+                            data: [highValueCount, midValueCount, lowValueCount],
+                            backgroundColor: [
+                                'rgba(28, 200, 138, 0.7)',
+                                'rgba(246, 194, 62, 0.7)',
+                                'rgba(231, 74, 59, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(28, 200, 138, 1)',
+                                'rgba(246, 194, 62, 1)',
+                                'rgba(231, 74, 59, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Customer Segment Distribution'
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                
+                // Create comparison chart
+                const segmentAverages = {
+                    'High-Value': { r: 0, f: 0, m: 0 },
+                    'Mid-Value': { r: 0, f: 0, m: 0 },
+                    'Low-Value': { r: 0, f: 0, m: 0 }
+                };
+                
+                // Calculate averages for each segment
+                ['High-Value', 'Mid-Value', 'Low-Value'].forEach(segment => {
+                    const segmentResults = rfmResults.filter(r => r.segment === segment);
+                    if (segmentResults.length > 0) {
+                        segmentAverages[segment].r = segmentResults.reduce((sum, r) => sum + r.recency, 0) / segmentResults.length;
+                        segmentAverages[segment].f = segmentResults.reduce((sum, r) => sum + r.frequency, 0) / segmentResults.length;
+                        segmentAverages[segment].m = segmentResults.reduce((sum, r) => sum + r.monetary, 0) / segmentResults.length;
+                    }
+                });
+                
+                if (comparisonChart) comparisonChart.destroy();
+                const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+                comparisonChart = new Chart(comparisonCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['High-Value', 'Mid-Value', 'Low-Value'],
+                        datasets: [
+                            {
+                                label: 'Recency (days)',
+                                data: [
+                                    segmentAverages['High-Value'].r,
+                                    segmentAverages['Mid-Value'].r,
+                                    segmentAverages['Low-Value'].r
+                                ],
+                                backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                                borderColor: 'rgba(78, 115, 223, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Frequency',
+                                data: [
+                                    segmentAverages['High-Value'].f,
+                                    segmentAverages['Mid-Value'].f,
+                                    segmentAverages['Low-Value'].f
+                                ],
+                                backgroundColor: 'rgba(54, 185, 204, 0.7)',
+                                borderColor: 'rgba(54, 185, 204, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Monetary Value ($)',
+                                data: [
+                                    segmentAverages['High-Value'].m,
+                                    segmentAverages['Mid-Value'].m,
+                                    segmentAverages['Low-Value'].m
+                                ],
+                                backgroundColor: 'rgba(246, 194, 62, 0.7)',
+                                borderColor: 'rgba(246, 194, 62, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Average RFM Values by Segment'
+                            },
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Value'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update customer table
+                updateCustomerTable();
+            }
+            
+            function displayDatasetResults() {
+                // Calculate averages
+                const avgRecency = datasetRfmResults.reduce((sum, r) => sum + r.recency, 0) / datasetRfmResults.length;
+                const avgFrequency = datasetRfmResults.reduce((sum, r) => sum + r.frequency, 0) / datasetRfmResults.length;
+                const avgMonetary = datasetRfmResults.reduce((sum, r) => sum + r.monetary, 0) / datasetRfmResults.length;
+                
+                // Update metrics
+                datasetAvgRecencyEl.textContent = avgRecency.toFixed(1);
+                datasetAvgFrequencyEl.textContent = avgFrequency.toFixed(1);
+                datasetAvgMonetaryEl.textContent = `$${avgMonetary.toFixed(2)}`;
+                
+                // Segment counts
+                const highValueCount = datasetRfmResults.filter(r => r.segment === 'High-Value').length;
+                const midValueCount = datasetRfmResults.filter(r => r.segment === 'Mid-Value').length;
+                const lowValueCount = datasetRfmResults.filter(r => r.segment === 'Low-Value').length;
+                
+                datasetHighValueCountEl.textContent = highValueCount;
+                datasetMidValueCountEl.textContent = midValueCount;
+                datasetLowValueCountEl.textContent = lowValueCount;
+                datasetCustomersAnalyzedEl.textContent = datasetRfmResults.length;
+                
+                // Create segment distribution chart
+                if (datasetSegmentChart) datasetSegmentChart.destroy();
+                const segmentCtx = document.getElementById('datasetSegmentChart').getContext('2d');
+                datasetSegmentChart = new Chart(segmentCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['High-Value', 'Mid-Value', 'Low-Value'],
+                        datasets: [{
+                            data: [highValueCount, midValueCount, lowValueCount],
+                            backgroundColor: [
+                                'rgba(28, 200, 138, 0.7)',
+                                'rgba(246, 194, 62, 0.7)',
+                                'rgba(231, 74, 59, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(28, 200, 138, 1)',
+                                'rgba(246, 194, 62, 1)',
+                                'rgba(231, 74, 59, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Customer Segment Distribution'
+                            },
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+                
+                // Create comparison chart
+                const segmentAverages = {
+                    'High-Value': { r: 0, f: 0, m: 0 },
+                    'Mid-Value': { r: 0, f: 0, m: 0 },
+                    'Low-Value': { r: 0, f: 0, m: 0 }
+                };
+                
+                // Calculate averages for each segment
+                ['High-Value', 'Mid-Value', 'Low-Value'].forEach(segment => {
+                    const segmentResults = datasetRfmResults.filter(r => r.segment === segment);
+                    if (segmentResults.length > 0) {
+                        segmentAverages[segment].r = segmentResults.reduce((sum, r) => sum + r.recency, 0) / segmentResults.length;
+                        segmentAverages[segment].f = segmentResults.reduce((sum, r) => sum + r.frequency, 0) / segmentResults.length;
+                        segmentAverages[segment].m = segmentResults.reduce((sum, r) => sum + r.monetary, 0) / segmentResults.length;
+                    }
+                });
+                
+                if (datasetComparisonChart) datasetComparisonChart.destroy();
+                const comparisonCtx = document.getElementById('datasetComparisonChart').getContext('2d');
+                datasetComparisonChart = new Chart(comparisonCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['High-Value', 'Mid-Value', 'Low-Value'],
+                        datasets: [
+                            {
+                                label: 'Recency (days)',
+                                data: [
+                                    segmentAverages['High-Value'].r,
+                                    segmentAverages['Mid-Value'].r,
+                                    segmentAverages['Low-Value'].r
+                                ],
+                                backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                                borderColor: 'rgba(78, 115, 223, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Frequency',
+                                data: [
+                                    segmentAverages['High-Value'].f,
+                                    segmentAverages['Mid-Value'].f,
+                                    segmentAverages['Low-Value'].f
+                                ],
+                                backgroundColor: 'rgba(54, 185, 204, 0.7)',
+                                borderColor: 'rgba(54, 185, 204, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Monetary Value ($)',
+                                data: [
+                                    segmentAverages['High-Value'].m,
+                                    segmentAverages['Mid-Value'].m,
+                                    segmentAverages['Low-Value'].m
+                                ],
+                                backgroundColor: 'rgba(246, 194, 62, 0.7)',
+                                borderColor: 'rgba(246, 194, 62, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Average RFM Values by Segment'
+                            },
+                            legend: {
+                                position: 'top'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Value'
+                                }
+                            }
+                        }
+                    }
+                });
+                
+                // Update customer table
+                updateDatasetCustomerTable();
+            }
+            
+            function updateCustomerTable() {
+                customerTable.innerHTML = '';
+                
+                rfmResults.sort((a, b) => b.monetary - a.monetary);
+                
+                rfmResults.forEach(result => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${result.customer}</td>
+                        <td>${result.recency}</td>
+                        <td>${result.frequency}</td>
+                        <td>$${result.monetary.toFixed(2)}</td>
+                        <td>${result.rfmScore}</td>
+                        <td><span class="segment-badge ${result.segment.toLowerCase().replace(' ', '-')}">${result.segment}</span></td>
+                    `;
+                    
+                    customerTable.appendChild(row);
+                });
+            }
+            
+            function updateDatasetCustomerTable() {
+                datasetCustomerTable.innerHTML = '';
+                
+                datasetRfmResults.sort((a, b) => b.monetary - a.monetary);
+                
+                datasetRfmResults.forEach(result => {
+                    const row = document.createElement('tr');
+                    
+                    row.innerHTML = `
+                        <td>${result.customer}</td>
+                        <td>${result.recency}</td>
+                        <td>${result.frequency}</td>
+                        <td>$${result.monetary.toFixed(2)}</td>
+                        <td>${result.rfmScore}</td>
+                        <td><span class="segment-badge ${result.segment.toLowerCase().replace(' ', '-')}">${result.segment}</span></td>
+                    `;
+                    
+                    datasetCustomerTable.appendChild(row);
+                });
+            }
+            
+            function filterCustomerTable() {
+                const filterValue = segmentFilter.value;
+                const rows = customerTable.getElementsByTagName('tr');
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const segmentCell = rows[i].getElementsByTagName('td')[5];
+                    if (segmentCell) {
+                        const segment = segmentCell.textContent || segmentCell.innerText;
+                        if (filterValue === 'all' || segment === filterValue) {
+                            rows[i].style.display = '';
+                        } else {
+                            rows[i].style.display = 'none';
+                        }
+                    }
+                }
+            }
+            
+            function filterDatasetCustomerTable() {
+                const filterValue = datasetSegmentFilter.value;
+                const rows = datasetCustomerTable.getElementsByTagName('tr');
+                
+                for (let i = 0; i < rows.length; i++) {
+                    const segmentCell = rows[i].getElementsByTagName('td')[5];
+                    if (segmentCell) {
+                        const segment = segmentCell.textContent || segmentCell.innerText;
+                        if (filterValue === 'all' || segment === filterValue) {
+                            rows[i].style.display = '';
+                        } else {
+                            rows[i].style.display = 'none';
+                        }
+                    }
+                }
+            }
+            
+            function resetPersonalData() {
+                if (confirm('Are you sure you want to reset all data?')) {
+                    orders = [];
+                    rfmResults = [];
+                    
+                    // Clear UI elements
+                    ordersTable.innerHTML = '';
+                    customerTable.innerHTML = '';
+                    
+                    // Update metrics
+                    updateSummary();
+                    
+                    // Hide results
+                    personalResultsSection.style.display = 'none';
+                }
+            }
+            
+            function resetDatasetData() {
+                if (confirm('Are you sure you want to reset all data?')) {
+                    datasetOrders = [];
+                    datasetRfmResults = [];
+                    
+                    // Clear UI elements
+                    document.getElementById('columnMapping').style.display = 'none';
+                    document.getElementById('csvFile').value = '';
+                    datasetCustomerTable.innerHTML = '';
+                    
+                    // Update metrics
+                    datasetTotalCustomersEl.textContent = '0';
+                    datasetTotalOrdersEl.textContent = '0';
+                    datasetTotalRevenueEl.textContent = '$0';
+                    datasetAvgOrderValueEl.textContent = '$0';
+                    
+                    // Hide results
+                    datasetResultsSection.style.display = 'none';
+                }
+            }
+            
+            function exportPersonalToCSV() {
+                if (rfmResults.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+                
+                // Create CSV content
+                const headers = ['Customer', 'Recency', 'Frequency', 'Monetary', 'RFM Score', 'Segment'];
+                const csvData = [
+                    headers.join(','),
+                    ...rfmResults.map(result => 
+                        `"${result.customer}",${result.recency},${result.frequency},${result.monetary},${result.rfmScore},"${result.segment}"`
+                    )
+                ].join('\n');
+                
+                // Create download link
+                const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'personal_rfm_analysis_results.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            function exportDatasetToCSV() {
+                if (datasetRfmResults.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+                
+                // Create CSV content
+                const headers = ['Customer', 'Recency', 'Frequency', 'Monetary', 'RFM Score', 'Segment'];
+                const csvData = [
+                    headers.join(','),
+                    ...datasetRfmResults.map(result => 
+                        `"${result.customer}",${result.recency},${result.frequency},${result.monetary},${result.rfmScore},"${result.segment}"`
+                    )
+                ].join('\n');
+                
+                // Create download link
+                const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'dataset_rfm_analysis_results.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            
+            // Make functions available globally
+            window.removeOrder = removeOrder;
+            window.showPage = showPage;
+        });
+    </script>
+</body>
+</html>
